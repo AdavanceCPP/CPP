@@ -1,0 +1,604 @@
+PIMPL: Pointer implementation model.
+
+class CA
+{
+private:
+  CB *p;   //PIMPL model
+public:
+
+//RAII - Resource Acquistion Is Initialization
+  CA()
+  {
+    p = new(nothrow) CB;  //Accquiring a heap resource
+  }  
+  
+  //...
+  ~CA()
+  {
+    delete p;  //Releasing the resource
+  }
+};
+------------------------------------------------------
+An extension of PIMPL model & RAII design is SMARTPOINTER TECHNQIUE.
+
+class CA{...};
+
+
+class CB
+{
+private:
+  CA* p;   //PIMPL model
+public:
+    CB()
+    {
+      p = new(nothrow) CA;
+    }
+    ~CB()
+    {
+      delete p;
+    }
+    
+    CA* GetCAaddress()
+    {
+      return this->p;
+    }
+    
+    CA* operator &()
+    {
+      return this->p;
+    }
+    
+    CA* operator ->()
+    {
+      return this->p;
+    }
+    
+    CA& operator *()
+    {
+      return *p;
+    }
+};
+
+//consumer code
+CB obj1;
+
+CA* p = obj1.p;  //error, cannot access private data
+
+CA* p = obj1.GetCAaddress();
+
+CA* p = &obj1;   // CA* p = obj1.operator &();
+
+obj1->fun();   // (obj1.operator ->())->fun();
+
+(*obj1).print();   // (obj1.operator *()).print();
+--------------------------------------------------------------
+
+
+
+
+
+---------------------------------------------------------------------
+C language: FUNCTION CENTRIC
+C++ language: DATA CENTRIC
+
+struct STUDENT
+{
+  int stdid;
+  char sname[25];
+  float marks;
+};
+
+
+struct EMPLOYEE
+{
+  int empid;
+  char empname[25];
+  float salary;
+};
+
+//structure varaibles, memory gets defined...
+struct STUDENT s1;   //It has only STATE, does not have a well-defined behaviour
+struct EMPLOYEE e1;
+
+//...
+//...
+
+s1.marks = e1.salary;
+
+Now, in C++ we can have an extended struct, to ensure data safety...
+
+struct EMPLOYEE
+{
+// DATA MEMBERS, ATTRIBUTES
+  int empid;
+  char empname[25];
+  float salary;
+  //member functions, methods or behaviours
+  void input(){ }
+  void print(){ }
+};
+
+
+EMPLOYEE e1;  //An object - It has both STATE as well as a well-defined behaviour.
+------------------------------------------
+
+CA* p = new(nothrow) CA[5];  //Array of heap objects
+
+p[0].print();
+p[1].print();
+
+
+
+CA p[5];  //Array of stack objects
+p[0].print();
+p[1].print();
+
+Syntax to the invoke the 'print' method is the same for both stack based and heap based instances. To avoid this confusion or make it clear to the programmer, it would make sense to overload the '->' operator for heap based instances...
+
+class CA
+{
+
+public:
+  //..
+  CA* operator ->()
+  {
+    return this;
+  }
+}:
+Now use the foll: convention...
+p[0]->print();    // (p[0].operator ->())->print();
+p[1]->print();
+----------------------------------
+void fun()
+{
+  int *p = new(nothrow) int;  //throw version
+  if(p == NULL)
+  {
+     cout <<"allocation failed";
+     exit(1);
+  }
+  //..
+}
+
+void fun()
+{
+ try
+ {
+  int *p = new int;  //throw version
+  //......
+ }
+  catch(bad_alloc &x)
+  {
+     cout << x.what();
+  }
+ 
+  //..
+}
+-----------------------------------------------
+
+CA* p =(int*) malloc(sizeof(int));
+
+CA* p = new int;   // CA* p = (CA*) operator new(sizeof(int));
+
+void* operator new(size_t size)
+{
+   if allocation successful
+      return address
+   else
+      throw bad_alloc();
+}
+
+------------------------------------------
+
+CA* p = new(nothrow) int;  // CA* p = (CA*) operator new(sizeof(int), nothrow());
+
+struct nothrow {  };  //empty struct for overloading purpose
+
+void* operator new(size_t size, nothrow& x)
+{
+  if allocation suceeds 
+     return heap address
+  else
+     return NULL;
+}
+
+class exception
+{
+public:
+  virtual const char* what() = 0;
+};
+
+class bad_alloc:public exception
+{
+public:
+  const char* what()
+  {
+    //...
+  }
+};
+--------------------------------------
+class CA
+{
+int a,b;
+public:
+  void fun1()    // void fun1(CA* const this)
+  { }
+  
+  void fun2() const  // void fun2(const CA* const this)
+  { }
+  
+  static void fun3()   // void fun3()
+  {
+  }
+  
+};
+//class consumers
+CA obj1;
+
+obj1.fun1();     // CA::fun1(&obj1);   ===> CA::fun1(CA* );
+obj1.fun2();     // CA::fun2(&obj1);   ===> CA::fun2(CA* );
+
+const CA obj2;
+
+//error, const objects will only call const member functions.
+obj2.fun1();   //  CA::fun1(&obj2);   ===>  CA::fun1(const CA* );
+
+CA::fun3();
+----------------------------------------------------
+
+class CA
+{
+private:
+  int a,b,c;
+  static int d;
+public:
+  //...
+  
+  //void Getd()  /Deals only with static data
+  static void Getd()
+  {
+    return d;
+  }  
+};
+//define memory for the static data well before creating objects
+int CA::d;
+
+int main()
+{
+  CA obj1, obj2, obj3;
+  //...
+  
+  obj1.Getd();   // CA::Getd();
+}
+
+-------------------------
+class CA
+{
+private:
+  int a;
+public:
+  void fun(int a)
+  {
+    //int a;
+    cout << a;  // local variable only
+    cout << this->a;
+  }  
+};
+
+FUNCTIONS ARE THE BASIC BUILDING BLOCKS in a structured world.
+
+void fun1()
+{ 
+
+}
+void fun2(){ }
+void fun3(){ }
+
+int main()
+{
+  fun1();
+  fun2();
+  fun3();
+}
+
+-----------------------
+//global function
+
+void fun(){ }     // ?fun@@YAXXZ  --microsoft
+                  // _Zfun3v
+
+class CA
+{
+public:
+  void fun()  //class member function  ---> ?fun@CA@YAXXZ 
+  { }
+};
+
+----------------------------------------
+FUNCTORS:-
+  Overloading of function-operator is called as FUNCTOR.
+  
+------------------------------
+STL: Standard template library
+
+1) container classes
+  - These classes that exihibit HAS-A relationship (PIMPL model) help us contain or hold values of the desired type in a specific mathematical model....
+  
+    - stack, queue, list, vector
+    - map, pair, multimap etc...  [KEY-VALUE RELATIONSHIP]
+    
+2) iterator classes
+  - Are classes whose objects would act like pointers to the values contained in a container class instance.
+  
+3) allocator class
+  - Are the classes which the container class instances use, to manage heap memory for the values getting populated onto them.
+  
+4) algorithms:
+  These are global utility functions, that can help us solve some custom business on the values held in a container class object.
+  
+template<typename T1, typename T2 = Allocator<T1>> class list
+{
+T1 data;
+T2 mem_obj;
+
+};  
+
+
+list<int> ls1;   // list<int, Allocator<int>> ls1;
+
+//Custom allocator
+
+template<typename T> class MyAllocator
+{
+public:
+ void* Allocate(){... }
+ void Deallocate(void* p){....}
+ //...
+};
+
+
+list<int,MyAllocator<int>> ls1;
+
+--------------------------------
+template<typename T1, typename T2 = Allocator<T1>> class list
+{
+  friend class iterator;
+  private:
+T1 data;
+T2 mem_obj;
+public:
+  //....
+  
+  
+  class iterator
+  {
+    //...
+  };
+};    
+
+--------------------------
+class student
+{
+ //...
+ public:
+   int Getid(){return id; }
+   float GetMarks(){return marks;}
+}:
+
+bool SortId(student& s1, student& s2)
+{
+  if(s1.Getid() > s2.Getid())
+     return true;
+  else
+     return false;
+}
+
+bool SortMarks((student& s1, student& s2)
+{
+  if(s1.GetMarks() > s2.GetMarks())
+     return true;
+  else
+     return false;
+}
+
+----------------------------------------------------
+
+int a;
+float b;
+double c;
+
+//float result1 = a+b*c;
+auto result1 = a+b*c;   //float result1=...;
+
+//float result2 = b+c;
+auto result2 = b+c;   //float result2=...;
+
+//float result3 = a+c;
+auto result3 = a+c;  //float result3=...;
+
+------------------------------------------------------
+While using the type-inference keyword 'auto', for defining a variable, that variable must and should be initialized.
+
+It is based on the initialized value or info, the data-type of the variable would be decided by the compiler.
+
+for eg:
+
+auto x;        //error, not initialized
+auto x = 10;   //ok
+
+The keyword 'auto' cannot be used for declaring array type elements.
+for eg:
+
+auto arr[10] = {10,20,30...};  //error
+
+Cannot use 'auto' for declaring of a data member in a class.
+
+class CA
+{
+  private:
+    auto x;  //error
+    auto y;  //error
+};
+
+Cannot use 'auto' as a formal parameter of a function.
+
+void fun(auto x)  //error
+{
+}
+----------------------------------------
+
+int a,b,c;
+
+auto a = 10, b=30, c=20;  //ok
+
+auto a = 10, b=34.12f, c=56.21;  //error
+-------------------------------------------------------
+The extended qualifiers if any would be ignored by the keyword 'auto'
+
+const int b = 200;
+
+auto x = b;   // 'x' will be 'int' and not 'const int'
+--------------------------------------------------------------
+
+list<int> ls1;
+
+list<int>::iterator itr = ls1.begin();
+
+Now, modern approach
+
+auto itr = ls1.begin();
+---------------------
+
+int func(double x){....}
+
+auto g = func;   // int(*g)(double);
+
+//call the function
+auto result = (*g)(45.12);
+
+
+auto& f = func;  
+
+//call the function
+auto result = f(45.12);
+------------------------------------------------------
+DECLTYPE:
+  Unlike 'auto', the decltype keyword is used for defining variables of desired type without the need to initialize the same. Also the extended qualifiers is not ignored like 'auto'.
+  
+auto x = 10;
+
+//Define 'b' whose type has to be whatever is 'x' type.
+decltype(x) b;   // int b;
+
+decltype(x*10.32f)  c;
+------------------------------------------
+const auto b1=200;
+
+
+auto val1 = b1;   // int val1= 200;
+
+decltype(b1) b2;  //error --> const int b2;
+decltype(b1) b2=200;  //ok, const int b2 = 200;
+
+------------------------------------------------------------------
+
+
+void Add(int x, int y)
+{
+  //..
+  //...
+}
+
+
+int main()
+{
+  //..
+  //...
+  Add(10,20);
+  //..
+  //...
+}
+
+|  10   |  <-- sp
+|  20   |  <-- bp
+|-------|
+|  500  |  <--bp, sp
+|-------| [main, @ 500]
+
+After epilog
+
+|  10   |  
+|  20   |  
+|-------|
+|  500  |  <--bp, sp
+|-------| [main, @ 500]
+------------------------------------------------
+
+template<typename T> class Func
+{
+private:
+  T *fp;
+};
+
+
+Func<void(void)>  obj1;   //   void(*fp)(void);
+Func<int(float)> obj2;   //   int(*fp)(float);
+
+There is a built-in header in traditional C++ library called 'functional'
+
+#include<functional>
+
+function<int(double)> obj1;
+----------------------------------------
+LAMBDA'S:
+  Ananymous functions, can be locally scoped inside of another function or also defined globally.
+  
+  []()
+  {
+    //.....
+  }();   //in-place call
+  
+  A lambda function with a handle
+  
+  auto lm=[]() ->void
+  {
+    //.....
+  }; 
+  
+  
+  lm(); //call the lambda
+  
+  
+  auto lm = [](void)->void {....};
+  
+  function<void(void)> lm = ...;
+  lm();   ==> lm.operator()();
+  
+  ------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
