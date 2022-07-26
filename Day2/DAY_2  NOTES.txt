@@ -1,0 +1,528 @@
+LAMBDA EXPRESSIONS:-
+  These are ananymous functions, can be scoped inside a function [global/member function] or in the global scope.
+  
+  Whenever we plan to define a lambda expression, it always starts with a pair of square-brackets...
+  
+  []()
+  {
+      //....
+  };
+
+A lambda if it has to be invoked, can be achieved in 2 different styles...
+  - Can be invoked at the point of definition itself...
+  
+  []()
+  {
+     //...
+  }();    //call here
+  
+  - The defined lamba can be assigned to a lambda handle, and then use this handle to invoke it.
+  
+  auto lm =[]()
+  {
+    //...
+  };
+
+Invoke using the lambda handle...where 'lm' is actually an object of 'function' class.
+And it calls the 'function operator' member function  
+
+  lm();    // lm.operator()();
+  
+  auto lm =[](){...};    // function<void(void)> lm =  [](){...};
+
+Whenever we plan to define lambda's, this construct does not have  a place-holder in its syntax to state it's return-type if any..., this is where we use the special modern C++ syntax called 'trailing return-type syntax'.
+
+for eg:
+
+  auto lm =[]() ->void
+  {
+    //..
+    //does not return anything...
+  };
+
+
+  auto lm1 =[]() -> int
+  {
+    int a;
+    ///...
+    return a;
+  };
+
+*******************************
+CAPTURE BY REFERENCE:
+
+int a=10,b=20;   //outer-scope elements being captured by reference in a lambda function
+
+auto lm = [&]()  ->void             
+    {
+        int& lambda::a = main::a;
+        int& lambda::b = main::b;
+        //..
+    };
+
+*****************
+CAPTURE BY VALUE:
+
+int a=10,b=20;   //outer-scope elements being captured by reference in a lambda function
+
+auto lm = [=]()  ->void             
+    {
+        static const int lambda::a = main::a;  
+        //error changes not permitted on 'const' elements
+        a=a+100;
+        static const int lambda::b = main::b;  
+        //error changes not permitted on 'const' elements
+        b=b+100;
+    };
+
+If, we as developers insist on making changes to the element that has been captured by value, then use the 'mutable' qualifier in the lambda definition, by doing so the compiler will now permit changes to these elements that have been captured by VALUE.
+
+auto lm = [=]() mutable ->void             
+    {
+        static const int lambda::a = main::a;  
+        //OK changes permitted on 'const' elements as it is mutable
+        a=a+100;
+        static const int lambda::b = main::b;  
+        //OK changes permitted on 'const' elements as it is mutable
+        b=b+100;
+    };
+
+-------------------
+RECURSIVE LAMBDA:-
+  Ability of a lambda function to call itself. 
+  
+  auto lm = []()
+  {
+    //..
+    //..
+    lm(); //error, 'lm' is not captured
+  };
+  
+For recursion, the lambda handle must be visible inside the lambda scope, thereby we need to capture the same.
+
+auto lm = [&lm]()
+{
+  //...
+  //...
+  lm();  //FINE, It is visible inside the lambda as it has been captured
+};
+
+Yet, the compiler would throw an error, for the above lambda definition, why ?
+We are trying to capture a function object instance by the name 'lm', even before the compiler could infer its type in full and define it.
+
+  So, here we notice the type-inference keyword 'auto' will not be of any help. The only option is to explicitly state the lambda handle type...
+  
+  function<int(int)> lm =[&lm](int x)
+  {
+    //..
+    lm(...);
+  };
+
+--------------------------------------------------------------
+UNIFORM UNITIALIZATION SYNTAX [brace initialization syntax]:-
+
+  - When used with a functions local variable declaration, it would automatically initialize to zero.
+    for eg:
+      int a;  //local variable on stack, will hold garbage info
+      
+      int a{};  //though a local variable on the stack, will be initialized zero.
+      
+int a=100;
+int a(100);
+Now, 
+int a{100};
+********************
+CA obj1 = 100;
+CA obj1(100);
+Now,
+CA obj1{100};
+
+  - When used with 'new' operator function, each instance of array can call respective constructors...
+  
+  - When used for populating collections-STL containers, all values in the braces will treated as one class-type called 'initializer_list' type.
+  
+------------------------------------------------------------------------  
+IN-CLASS INITIALIZERS FOR NON-STATIC DATA MEMBERS:-
+
+  In a traditional C++ code, while declaring data members in a class, there was no support for providing any default values for the same. Doing so it would flag error. For eg:
+  
+  class CA
+  {
+    private:
+      int a =10;          //error
+      float b= 45.12f;  //error
+  };
+  
+On the contrary, now with in-class initializer feature in modern C++, we can achieve the same, where-in we can provide default values for each of the non-static data members, this value can be either a literal or an expression or a function call.
+
+It is just a syntatic sugar to explicitly avoid or define a default constructor by the class author. 
+
+The memory for data members do get defined only upon an object construction, this syntax is a message to the compiler to initialize the data members with the stated values in the class declaration by defining its own default constructor.  
+
+class CA
+  {
+    private:
+      int a =10;          //ok, in modern C++
+      float b= 45.12f;  //ok, modern c++
+  };
+
+
+           Traditional C++ code                                  Modern C++ code
+     
+     class CA                                              class CA
+     {                                                     {
+       private:                                              private:
+         int a;                                                   int a = 10;
+         float b;                                                 float b = 45.12f;
+         float c;                                                 float c = a*b;
+       public:                                                public:
+          CA():a(10),b(45.12f),c(a*b)                             //no explicit def. constructor necessary
+          { }                                                     //compiler would assume on our behalf.
+     };                                                     };  
+          
+----------------------------------------------------------------
+DELEGATING CONSTRUCTORS:-
+            A provision by which a class constructor can be called in the initializion_list of the same class constructor.
+            
+    In traditional C++, it was not possible to delegate constructors, such attempts would throw an error. For eg:
+    
+    class CA
+    {
+    public:
+      CA():CA(1,2)              //ERROR, not supported in traditional C++
+      {}
+      CA(int x)
+      { }
+      CA(int x, int y)
+      {  }
+    };
+        
+        
+    CA obj1; 
+---------------------------------------------
+DEFAULT METHODS:-
+          The 'default' keyword is applicable to the foll: compiler generated methods 
+          1) Default constructor
+          2) Copy constructor
+          3) Assignment function.
+         
+
+In traditional C++ class, if none of the above methods are defined, it is generally assumed compiler would generate one.
+      A default constructor when ?
+        - A default constructor would be assumed under the foll: scenarios
+        Traditional C++
+          a) Virtual inheritance model
+          b) A base has a default constructor, derived does not have any - then the compiler will assume one
+             for the derived class.
+          c) A class contains a data member, which is an object of another class having a default constructor, then
+             the compiler would assume one for the container class.
+          d) If the class is POLYMORPHIC by nature i.e. having OVER-RIDING and OVER-RIDABLE methods.
+       Modern C++
+          e) If the class is using in-class initializer feature, and no default constructor is defined, then
+             the compiler will assume one.
+              **************
+       A copy constructor when ?
+        If the class is not provided with any copy constructor, and the class consumer happens to copy construct
+        objects of such a class, then the compiler is expected to generate a COPY CONSTRUCTOR.
+       
+       An Assignment function when ?
+         If the class it not provided with an assignment function, and the class consumer happends to assign one or
+         objects, then the compiler would assume one.
+         
+NOTE: If the above stated contexts do not apply for a class, then compiler will not assume any of the above stated methods.         
+*******************
+The default method in modern C++ world supports 2 things...
+  a) States the intentions of the class author that they plan to depend upon the compiler synthesized methods and they don't plan to define anything of their own.
+     In Traditional C++ class, if these methods are defined it is blindly assumed by the class consumer that the compiler will generate one.
+     
+      Where as now in modern C++, we as class authors can make our intentions very clear to the class consumer, that we plan to depend upon the compiler generated one. for eg:
+      
+      class CA
+      {
+      public:
+        CA() = default;
+        CA(const CA& x) = default;
+        CA& operator =(const CA& x) = default;
+      };   
+  The above class is more expressive in its intent.
+  
+ b) It also supports the programmer to have a fine grained control over these compiler generated methods.
+ 
+     We generally understand or know, that in a traditional C++ class if we don't happen to define these 
+     methods, then the compiler will assume one and these compiler assumed methods will always be under
+     'public' access-specifier of the class.
+     
+     But, now in modern C++ we as class authors can dictate or direct the compilers that they shall assume
+     or provide these methods under the access-specifier of our choice not necessarily under 'public'.
+     
+     How ?
+      Let the compiler assume a default constructor in 'public', the copy constructor and assignment function
+      in private.
+      
+     class CA
+     {
+     private:
+      CA(const CA& x)=default;
+      CA& operator =(const CA& x)=default;
+     public:
+       CA()=default;
+     };
+        
+     The above class is expressive to the class consumer, in its intent that the copy construction and 
+     assignment operation is not permitted outside the class scope, shall be allowed only inside the class
+     scope and these methods will be compiler generated ones.
+------------------------------------------
+DELETE METHODS:
+          It is just the converse of default methods, dis-able certain operations, applicable to the foll: methods or problem scenarios...
+          
+          1) default constructor
+          2) LVALUE copy constructor
+          3) RVALUE copy constructor
+          4) LVAUE assignment function
+          5) RVALUE assignment function
+          6) To dis-able the implementation of 'operator new' on certain class types
+          7) To dis-able certain conversions.
+          8) To dis-able certain template instantiations.
+
+For Eg: in the traditonal C++ world, we as class authors wished, that instances of our class should not be allowed for copy construction nor assignment operation, then the only way was to define or declare our own methods under the 'private' access-specifier of the class.
+
+class CA   //Traditional C++ class
+{
+private:
+   CA(const CA& );
+   CA& operator =(const CA& );
+public:
+    //all other methods will be defined under public
+};          
+        
+A modern approach to address the above stated problem:
+
+class CA
+{
+public:
+  CA(const CA& x) = delete;
+  CA& operator =(const CA& x) = delete;
+};        
+--------------------------------------------
+DELETE METHODS (contd...):-
+
+In a modern C++ class, if a copy constructor or assignment function are tagged 'delete', it will not be possible to copy construct or carry out an assignment operation even inside the class scope.
+
+Design a class whose heap instances shall not be permitted:-
+
+Traditional C++ design, overload the 'operator new' under the private access-specifier of that class.
+
+class CA
+{
+private:
+  //..
+  void* operator new(size_t size);
+public:
+  //...  
+};
+
+//consumer
+
+CA* p = new CA;  //error, private member is not accessible.
+****************
+Now, in modern C++ we refactor the above code, declare the method under public and dis-able the same with 'delete'
+
+class CA
+{
+private:
+  //..
+  
+public:
+  void* operator new(size_t size)=delete;
+  //...  
+};
+
+//consumer
+
+CA* p = new CA;  //error, It is a deleted function
+----------------------------------------------------------------------------
+OVERRIDE AND FINAL KEYWORDS:-
+
+  - The override keyword is applicable to member functions of a POLYMORPHIC class family.
+  - The final keyword is applicable both at class level and function level.
+
+In a traditional C++ environment it is not possible for any class author to prevent their classes being further inherited. [Modern C++ we use 'final']
+
+class CA{...};
+
+class CB:public CA   //Now the author of 'class CB' cannot prevent a class from inherting it.
+{...};  
+
+class CC:public CB
+{...};
+
+Also, there was no facility or construct available in a traditional C++ environment, to prevent any methods being over-ridden in the derived class. For eg:
+[Modern C++ we use 'final']
+class Base
+{
+public:
+  virtual void fun(){ }
+};
+
+class Derived1:public Base  //Now, what if Derived1 wants to prevent the 'fun' being over-ridden the derived class?
+{                               //It is not possible in the traditional C++ world.
+public:
+   void fun()   //OVERRIDES the Base 'fun'
+   { }
+};
+
+class Derived2:public Derived1
+{
+public:
+  void fun()   //OVERRIDES THE Derived1 'fun'
+  { }
+};
+
+What is the guarantee a derived class programmer, who attempts to override the base class virtual function(s), uses the correct or precise signature ?
+
+class Base
+{
+public:
+  virtual void fun(int x){ }
+};
+
+class Derived1:public Base  
+{                              
+public:
+   void fun(int x)   //Signature matches exactly, thereby no issues
+   { }
+};
+
+class Derived2:public Base
+{
+public:
+  void fun(float x)  //signature mis-match, does not over-ride the base class method.
+  { }
+};
+
+When a such a takes place with function signature mis-match, a Traditional C++ compiler will never issue any error or warning, rather it will smoothly compile and consider the method 'void fun(float)' as a new member function of the derived class.
+
+Hypothetically the above 'Derived2' class can be seen as follows:
+
+class Derived2:public Base
+{
+public:
+  void Base::fun(int x)
+  {  }
+  
+  void fun(float x)  //signature mis-match, considered as a new member function in Derived2 class
+  { }
+};
+----------------------------------------
+------------------------------------------------
+EXTENDED FRIEND DECLARATIONS:
+  This modern C++ class feature, provides 3 distinct advantages...
+  1) More type safe [trying to qualify a non-existent class as a friend]
+  2) Helps in using alias or typedef names to qualify it as a friend
+  3) A typename in a generic code can also make use of it in order to qualify itself as a friend to someone.
+  
+1) 
+
+//Loop holes in a traditional approach.
+class CB{ } ;
+class CC{ };
+//..
+class CD
+{
+  friend class CA;    // This statement actually boils down to two diff. constructs...
+                                a) class CA;   //acts as a forward declaration
+                                b) friend CA; // now this CA becomes friend.
+};
+  
+In the above example, the 'class CA' declaration does not precede the 'class CD' declaration, further there is no guarantee there would be 'class CA' declaration following the 'class CD' declaration.
+
+  If the 'class CA' declaration exists foll: 'class CD', then it makes sense to qualify it as a friend.
+  
+  What if 'class CA' declaration does not exist foll: 'class CD' ?
+  In traditional C++ code, it will happily compile, now there is an attempt to qualify a non-existent class a friend.
+
+But,now in modern C++ we can trap such issues... by using the extended friend declaration syntax...
+
+class CB{};
+class CC{};
+//..
+class CD
+{
+  //Extended 'friend' declaration syntax, that avoids the 'class' keyword altogether
+  friend CA;   //Error, at the point compiler has never encountered any class by the name 'CA',
+               //whether the 'class CA' declaration follows 'class CD' or not, it is immaterial
+};
+  
+What will work ?
+
+class CA{};
+class CB{};
+//...
+
+class CD
+{
+ friend CA;   //OK, will work as the declaration of 'CA' precedes this statement or 'class CD' declaration.
+};  
+
+2) 
+
+In a traditional C++ code, it was not possible to use a typedef name for qualifying it as a friend, for eg:
+
+class MyclassCB{..};
+
+typedef MyclassCB CB;   //Now 'CB' is an alias to name to 'MyclassCB'
+
+class CD
+{
+  friend class MyclassCB;   //ok, no problem, 
+  friend class CB;  //ERROR, cannot use alias to typedef names to qualify it as a friend.
+}; 
+
+Whereas now in modern C++, with extended friend declaration syntax, we can qualify a typedef also a friend if we wish.
+
+class MyclassCB{..};
+
+typedef MyclassCB CB;   //Now 'CB' is an alias to name to 'MyclassCB'
+
+class CD
+{
+  friend MyclassCB;   //ok, no problem, 
+     (or)
+  friend CB;  //ok, can use typedef names
+}; 
+
+3) 
+
+In a traditional C++ code it is never possible to qualify a typename as a friend for eg:
+
+template<typename T1, typename T2> class CA
+{
+  //in C++98 code
+  friend class T1;    //error, cannot use typenames for qualifying it as a friend
+  friend class T2;    //error, cannot use typenames for qualifying it as a friend
+};
+
+But now, in modern C++ we can achieve the same with extended friend declaration syntax...
+
+template<typename T1, typename T2> class CA
+{
+  //in C++11 code
+  friend  T1;    //ok, can use typenames for qualifying it as a friend
+  friend  T2;    //ok, can use typenames for qualifying it as a friend
+};
+
+CA<int,float> obj1;
+
+  friend int;          //These statements will be ignored automatically as they are not class types
+  friend float;        //These statements will be ignored automatically as they are not class types
+****************************
+CA<CB,CC> obj2;
+
+   friend CB;
+   friend CC;
+*************************
+CA<CB, double> obj3;
+
+   friend CB;
+   friend double;   //will be ignored
+----------------------------------------------------------
