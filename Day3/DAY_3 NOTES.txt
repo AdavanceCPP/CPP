@@ -1,0 +1,711 @@
+NESTED CLASS ACCESS RIGHTS:-
+
+    In Traditional C++, if we happen to declare one class inside of another class, then we used to call them as nested class.
+    This nesting attempt is not considered as member of the outer class, it is just scoping, instead of global scope, we happen to declare it inside another class scope...As such both the classes are independant of each other.
+    
+    for eg:
+    
+    class Outer
+    {
+      public:
+         //...
+      private:
+         //..
+      
+      class Inner
+      {
+        private:
+          //..
+        public:
+          //...
+      };
+    };
+
+  In the above declaration, the class 'Inner' is scoped inside the class 'Outer', as such the public member functions of 'Inner' cannot access the private data of the 'Outer'.
+  If there is any compulsion, that this nested class called 'Inner' must and should have access to the private 
+  members of the 'Outer' class, then we have to qualify the 'Inner' as a friend to the 'Outer'.
+
+    class Outer
+    {
+      friend class Inner;  //Now the 'Inner' can have access to the private data of 'Outer'
+      public:
+         //...
+      private:
+         //..
+      
+      class Inner
+      {
+        private:
+          //..
+        public:
+          //...
+      };
+    };
+But, now modern C++ a mere nesting of class declaration, it becomes a friend... There is nothing like we have had the friend declaration statement like in traditional C++ code.
+
+    class Outer
+    {
+      public:
+         //...
+      private:
+         //..
+      
+      class Inner     //By default this enclosed class [Inner] becomes a friend to the enclosing class [Outer]
+      {
+        private:
+          //..
+        public:
+          //...
+      };
+    };
+----------------------------------------------------------
+RANGE-FOR CONSTRUCT:
+  This loop construct is primarily designed to work on collection types, types hold arbitrary or finite quantum of values having a definite starting address and an definite ending address.
+  
+    for eg:
+      - Could an array type
+      - could be an instance of STL container class.
+
+for(data_type var:collection_instance)
+{
+  //..
+}      
+  
+list<int> ls1;
+//...
+
+//Given the foll: statement the range-for construct will loop thru from 'begin' to 'end' of the list collection, 
+//for every looping or iteration, it would pick a value and initialize 'x'.
+for(int x: ls1)
+{
+  //...
+}  
+
+How do we specify a particular starting and ending location for a given collection.
+
+list<int> ls1;
+
+We wish to start from the 40th index and proceed till only the 80th index of the collection
+
+auto itr = ls1.begin();
+
+list<int>::iterator start(itr+=40);    // start(itr.operator +=(40)); 
+itr = ls1.begin():
+list<int>::iterator end(itr+=80);
+
+for_each(start, end, function_name);
+-------------------------------------------------------
+How can the following 'class Data' be made range-for compatible type ?
+
+The class has multiple data members of collections types..
+
+class Data
+{
+private:
+  int arr[10];
+  list<int> ls1;
+  vector<float> v1;
+  //...
+public:
+  begin()
+  {
+  }
+  
+  end()
+  {
+  }
+};
+
+Let us refactor the above code, such that each collection data-member is an instance of a seperate class...
+
+class intArray
+{
+private:
+  int arr[10];
+public:
+  auto begin(){ return arr; }
+  auto end(){ return &arr[10]; }  
+};
+
+class intList
+{
+private:
+  list<int> ls1;
+public:
+    auto begin(){ return ls1.begin(); }
+    auto end(){ return ls1.end(); }
+};
+
+class floatVector
+{
+private:
+  vector<float> v1;
+public:
+    auto begin(){ return v1.begin(); }
+    auto end(){ return v1.end(); }
+};
+
+Now the modified 'class Data' will look as follows:
+
+class Data
+{
+private:
+  intArray ob1;
+  intList ob2;
+  floatVector ob3;
+public:
+    //...
+    //provide suitable getter functions
+    intArray& GetArray()
+    {
+       return ob1;
+    }
+    
+    intList& GetList()
+    {
+       return ob2;
+    }
+    
+    floatVector& GetVector()
+    {
+      return obj3;
+    }
+};
+
+//***consumer code**********
+int main()
+{
+  Data obj1;
+                 //Data::ob1
+  for(auto x: obj1.GetArray())
+  {
+    //....
+  }
+             // Data::ob2
+  for(auto x:obj1.GetList())
+  {
+    //..
+  }
+             // Data::ob3
+  for(auto x:obj1.GetVector())
+  {
+    //..
+  }
+}
+
+FACILITATING A READ-ONLY OPERATION WHILE USING RANGE-FOR CONSTRUCT ON AN COLLECTION:-
+
+class CArray()
+{
+private:
+  int arr[10];
+public:
+  const int* begin()
+  {
+    return arr;
+  }   
+  
+  const int* end()
+  {
+    return &arr[10];
+  }
+};
+
+************************
+class MyList
+{
+private:
+  list<int> ls1;
+public:
+    decltype(auto) begin()
+    {
+      //return ls1.begin();
+      return ls1.cbegin();
+    }
+    
+    decltype(auto) end()
+    {
+      //return ls1.end();
+      return ls1.cend():
+    }
+};
+----------------------------------------------  
+INITIALIZER_LIST type:-
+    Now in modern C++11 standards onwards, we are provided with a light-weight wrapper class, whose instance can accomodate or hold arbitrary number of values of homogenous types.
+    An instance of this type becomes very handy providing lot of flexibilities both to the class author as well to the class library consumer, particularly the data members of class are all collection types, and they have initialized or populated by the class consumer.
+    
+//Traditional C++ approach
+
+class CA
+{
+private:
+  int arr[100];
+public:
+  //need to provide a constructor to initialize the above array...
+  
+  CA(int* p)
+  {
+    for(int i=0;i<100;i++)
+    {
+      arr[i] = p[i];
+      i++;
+    }
+  }
+  
+  CA(int x1, int x2, int x3... int x10):a[0](x1), a[1](x2),.... a[9](x10)
+  {
+  }
+};    
+  
+//***consumer code****
+int main()
+{
+  CA obj1(10,20,30,40...);  //approach-1
+  
+  CA ar[10] ={....};
+  CA obj1(ar);   //approach-2
+}  
+******************
+Now in modern C++ it is far more easy to accept arbitrary number of parameters to initialize any collection type data members of a class.
+
+class CA
+{
+private:
+  list<int> ls1 = {10,20,30,40,50,50};
+};
+  
+The brace initialization syntax or the uniform initialization syntax by the compiler is inferred in different ways depending on the context where and how it is used.
+
+for eg:
+CONTEXT-1 when declaring primitive type variables...
+
+int a=10;
+int a(10);
+//modern approach
+int a{10};   // here the brace syntax is inferred as initialization syntax for the primitive variable.
+
+//local variables
+int x1;    //will hold garbage value
+int x2{};  // will hold zero.
+  
+CONTEXT-2, when used with new operator function, for creating an array of instances
+
+CA* p = new(nothrow) CA[5]{{},{10},{10,20},{100},{} };  
+  
+    Given the above statement the inference by the compiler is to pass each parameter to its respective constructors.
+-------------------------------------
+CONTEXT-3, When used with STL container objects...
+
+When STL container instances are initialized with brace initialization syntax, then the inference by the compiler is to first convert the complete range of values in the braces to the type 'initializer_list'.
+
+list<int> ls1 ={10,20,30,40,50,60};
+              = initializer_list<int>{....};
+list<int> ls1(initializer_list<int>{....});              
+
+vector<int> v1 ={100,200,300,400};
+              = initializer_list<int>{....};
+vector<int> v1(initializer_list<int>{....});     
+
+Note: Every STL container classes have now been provided with additional overloaded constructor in their classes, that take 'initializer_list' as its parameter
+
+template<typename T> class list
+{
+public:
+  //...
+  list(initializer_list<T>& ob)
+  {
+    //...
+  }
+};
+   
+---------------------------------------------------
+MODERN C++ TEMPLATE FEATURES:
+
+Default arguments for function templates:-
+
+In traditional C++ there was no support for default types while defining a function template, The default types were only permitted for class templates...
+
+for eg:
+      //function template
+      template<typename T=double> void fun(T X)  // error,in the typename list we could not provide the default type
+      {... }
+      
+      But, the same was permitted only for class templates...
+      template<typename T = double> class CA   //default type allowed for class templates in C++98/2003 standards
+      { };
+  But, now in modern C++ we can not only provide default arguments for a generic function, as well we can also provide default type for a generic function, for eg:
+  
+  The default type in the typename list and the default argument to the formal parameter of a generic function has to type compatible.
+  template<typename T = double> void fun(T x=34.12)  
+      {... }
+  
+***************************
+RVALUE & LVALUE types:
+
+Entities that can be present either on the left hand side of an equation or on the right hand side of an equation is an LVALUE type [stands for LEFT HAND SIDE VALUE]. For eg: It could be any named entity.
+
+Entities that can only be present on the right hand side of an equation are known as RVALUE types [stands for RIGHT HAND SIDE VALUE]. For eg: It could be any literal (numeric/non-numeric/class type), entities that generally do not have a name. Even the return value of a function is RVALUE, because this temporary does not have any name.
+
+
+int fun()
+{
+  int a;   //LVALUE
+  //...
+  return a;    //assume it is returning 100
+} 
+
+
+int main()
+{
+  int result;   //LVALUE
+  //..
+  result = fun();    // result = 100;
+}
+
+Let us consider the foll: equations...
+
+int a,b;
+a = 100;           // LVALUE = RVALUE
+b = a;             // LVALUE = LVALUE
+
+100 = a;      //error  
+------------------------------------------------------  
+Now in modern C++ a reference type entity can be categorized into 2 diff. forms or types..
+
+         REFERENCE TYPE
+              |
+       |----------------|
+    lvalue            rvalue
+
+What is the syntax for declaring a lvalue and rvalue reference types...
+
+LVALUE REFERENCE TYPE: At the point of declaration of an entity, prefixing a single '&' is termed as LVALUE reference type.
+
+int a;
+int& ref1 = a;  //ok
+int& ref = 100; //error
+
+RVALUE REFERENCE TYPE: At the point of declaration, prefixing it with a 2 '&' is termed as RVALUE reference type.
+
+for eg:
+
+int&& ref1 = a;
+int&& ref2 = 100;
+
+So, in a modern C++ class we can have a pair of copy constructor and a pair of assignment function.
+
+class CA
+{
+public:
+  //LVALUE PAIR
+  CA(const CA& x);
+  CA& operator = (const CA& x);
+  
+  //RVALUE PAIR
+  CA(CA&& x);
+  CA& operator =(CA&& x);
+};
+--------------------------------------------
+REFERENCE COLLAPSING:-
+
+template<typename T> void fun3(T& x)   // void fun3(int&& & & x)   //int& 
+{ 
+
+}
+
+template<typename T> void fun2(T& x)   // void fun2(int&& & x)     ===>int&
+{ 
+   fun3(x);
+}
+
+template<typename T> void fun1(T& x)  // void fun1(int&& x)    ===> int& 
+{ 
+   fun2(x);
+}
+
+template<typename T> void fun(T& x)  // void fun(int& x)  T ===> int&
+{ 
+  fun1(x);
+}
+
+//***consumer code******
+int main()
+{
+  int a;
+  fun(a);
+}
+
+Now that in modern C++, both a single '&' and a double '&&' have special meaning, and during template instantiations by the compiler yeilds more than 2 '&', then how many should they ignore and how many should be retained ?
+
+The decision was simple:
+  If the '&' count yeilded odd number - retain one
+  if the '&' count yeilded even number - retain two
+----------------------------------------------------------------------------
+
+int a;
+int& ref = a;  // The term 'int& ' means it is an alias type to an integer variable
+
+int& ref = 100;  //error, 'ref' is declared to an alias to an integer variable, 100 is a integer const.
+
+correction or solution for the above issue..
+
+const int& ref = 100;  //ok, as 'ref' is declared to be an alias to an 'const int'
+------------------------------
+Note: 
+  An LVALUE reference type would only act as an alias to an LVALUE type, where as an RVALUE reference type will act as an alias to both LVALUE type as well as RVALUE types.
+**********************
+A function with RVALUE reference type would be more scalable when compared to LVALUE Reference type:
+
+//Traditional approach
+
+template<typename T1, typenameT2> class Mydata
+{
+  private:
+   vector<T1> v1;
+   vector<T2> v2;
+ public:
+  void Populate(T1& x, T2& y)
+ {
+  v1.push_back(x);
+  v2.push_back(y);
+ }
+ void Populate(T1& x, const T2& y)
+ {
+  v1.push_back(x);
+  v2.push_back(y);
+ }
+ void Populate(const T1& x, T2& y)
+ {
+  v1.push_back(x);
+  v2.push_back(y);
+ }
+ void Populate(const T1& x, const T2& y)
+ {
+  v1.push_back(x);
+  v2.push_back(y);
+ }
+
+};
+
+Modern Approach - No overloading of 'Populate'
+
+template<typename T1, typenameT2> class Mydata
+{
+  private:
+   vector<T1> v1;
+   vector<T2> v2;
+ public:
+  void Populate(T1& x, T2& y)
+ {
+  v1.push_back(x);
+  v2.push_back(y);
+ }
+};
+  
+-----------------------------------------------
+MOVE COPY AND MOVE ASSIGNMENT FUNCTION:-
+
+In a traditional C++ class, we don't happen define a copy constructor or an assignment function, then the compiler is expected to generate one for the class under the 'public' access specifier. This compiler generated methods employ a business plan which is also termed as BIT-WISE / MEMBER-TO-MEMBER and at times also called SHALLOW operation.  
+
+If in-case the programmer decides to define their own copy constructor or assignment function, then the compiler will not assume any. Further, the programmer defined methods will employ algorithms as defined by the programmer, that may be 
+  -BIT-WISE / MEMBER-TO-MEMBER and at times also called SHALLOW operation (or)
+  -DEEP COPY/ DEEP ASSIGNMENT
+  
+  The general practice is, if the programmer wishes for BIT-WISE operation, then they would generally depend the compiler synthesized methods, and if the programmer wished for DEEP copy or DEEP assignment operation, then they would be compelled to define their own custom copy constructor and assignment function.
+  
+  Compiler Generates: bit-wise/shallow
+  Programmer defines: deep copy or deep assignment.
+  
+Now in modern C++ the programmer has the flexibility of having both pairs of COPY CONSTRUCTOR and ASSIGNMENT function operations defined in a single class.
+
+   Desires to go for DEEP copy or DEEP ASSIGNMENT operation ?
+      LVALUE copy constructor and LVALUE ASSIGNMENT FUNCTION:
+      
+      class CA
+      {
+         public:
+           //...
+           /*
+              - It is always a READ-ONLY business on the SOURCE, and a WRITE operation on the TARGET
+           */
+           CA(const CA& x);
+           CA& operator =(const CA& x);
+      };
+      
+      
+   Desires to go for shallow/bit-wise operation ?
+    RVALUE copy constructor and RVALUE ASSIGNMENT function:
+       
+      class CA
+      {
+         public:
+           //...
+           /*
+              - It is READ cum WRITE business on the SOURCE, and a WRITE operation on the TARGET
+           */
+           CA(CA&& x);
+           CA& operator =(CA&& x);
+      };
+-------------------------------------------------------------
+LVALUE/RVALUE pairs of copy constructor/assignment functions (contd...):-
+
+If the author of the class decides to provide an option to the class consumer, whether they want to go for a DEEP copy or DEEP assignment operation only. Then the class would be introduced only with LVALUE pairs of copy constructor and assignment function.
+
+If the author of the class decides to provide an option to the class consumer, whether they want to go for a SHALLOW copy or SHALLOW assignment operation only. Then the class would be introduced only with RVALUE pairs of copy constructor and assignment function.
+
+At times the programmer of a class may provide both options to the class consumer.
+
+Note: The decision of deciding between LVALUE pairs and RVALUE pairs always arises only in the context of a class exhibiting PIMPL model.
+
+
+****************************
+Design a class that is MOVE-ONLY type.
+
+class CA
+{
+private:
+  //...
+public:
+  //...
+  CA(const CA& x) = delete;
+  CA& operator =(const CA& x)=delete;
+  
+  CA(CA&& x){ }
+  CA& operator =(CA&& x){  }  
+};
+---------------------------------------------------
+VARIADIC TEMPLATES:
+  - A variadic function template
+  
+    template<typename... T> void fun(T ...Args) { }
+          (or)
+    template<typename  ...  T> void fun(T ...Args) { }
+          (or)
+    template<typename ...T> void fun(T ...Args) { }
+     
+    //Implementation of the above function
+    
+    fun(10,45.12f, 'a', 89);
+
+     2nd form of a variadic function
+     
+     template<typename T, typename... PACK> void fun(T x, PACK ...Args)
+     { 
+        // Where T is non-variadic and
+        // PACK is a variadic
+     }
+------------------------------------------------------------     
+In order to process the arbitrary number of values received by a variadic function, the process is as follows:
+      - Unpack the parameter pack (variadic element) and pick one value 
+               : We need to go for a recursive call.
+      - In order to hold or receive the value that just got unpacked from the parameter pack we provide a placeholder variable as the first formal parameter of the function.
+    The above 2 process should continue for how long ?
+       - As long as there is only 1 value in the parameter pack (or) 
+       - The pack is empty..
+       When the above circumstances arise, we need to break or come out of the recursion process. For which purpose we provide an additional overload function that either takes a single formal parameter or no parameter.
+   *****************************************
+    FORM-1: Suitable to accept arbitrary number of arguments of homogenous type...   
+    template<typename... T> void fun(T ...Args) { }
+
+    FORM-2: Suitable to accept arbitrary number of arguments of heterogenous types...
+    template<typename T, typename... PACK> void fun(T x, PACK ...Args)
+     { 
+        // Where T is non-variadic and
+        // PACK is a variadic
+     }
+
+-----------------------------------------------------------
+A CALLBACK FUNCTION:-
+
+void Callback(void(*ff)())
+{
+}
+
+In the above function, the consumer has no choice with regard to the function, each time one tries make a call or implement the above function, the consumer is mandated to always pass address of a function of the form 'return-type void and input-type void'.
+
+How about designing a callback function that provides the choice of the function form to the consumer ?
+Answer is - make use of variadic function templates in modern C++.
+----------------------------------------------------------
+Var args. function...
+Now in modern C++ we have variadic templates...
+We can design or write generic code that can handle arbitary numbers of parameters, these parameters may be homogenous or heterogenous types.
+
+  -Variadic function templates
+  -Variadic class templates
+  
+  The form of a variadic function template can as follows:
+
+template<typename... PACK> return_type function_name(PACK ...args)
+{
+         // PACK ...args   --> Arbitary numbers of inputs of the type PACK
+}  
+
+(or)
+template<typename ... PACK> return_type function_name(PACK ...args)
+{
+
+} 
+
+(or)
+template<typename ...PACK> return_type function_name(PACK ...args)
+{
+
+} 
+
+// Processing the values received by a variadic function....
+
+//Approach-1
+  -The idea is to have additional formal parameter that act's as place holder for every value that we plan to un-pack from the variadic collection.
+  - In-order to un-pack the elements of the variadic collection or list, we try to make a recursive call to the function, during each call it is expected to un-pack one value from the collection. 
+  - The recursion has to break when either the pack is empty or is holding the last or a single value, for which we need to have another overloaded function to address this issue.
+  
+  For eg:
+  
+  //overloaded function
+  template<typename T> void Fun(T x)
+  {
+  
+  }
+  
+  template<typename T, typename... PACK> void Fun(T x, PACK ...Args)
+  {
+     cout << x;
+     Fun(Args...);  // Fun() (or) Fun(one_value)
+  }
+****************************************************************************
+
+//consumer end
+Print(10,56,89,43.21,'a','b',98.21f);
+
+stage-1
+
+void Fun(T x=10, PACK ...Args =(56,89,43.21,'a','b',98.21f))
+{
+   cout << x;
+   Fun(Args...);  // Fun(56,89,43.21,'a','b',98.21f);
+}
+
+stage-2
+
+void Fun(T x=56, PACK ...Args =(89,43.21,'a','b',98.21f))
+{
+   cout << x;
+   Fun(Args...);  // Fun(89,43.21,'a','b',98.21f);
+}
+
+stage-3
+
+void Fun(T x=89, PACK ...Args =(43.21,'a','b',98.21f))
+{
+   cout << x;
+   Fun(Args...);  // Fun(43.21,'a','b',98.21f);
+}
+//...
+
+Last but one stage:
+void Fun(T x='b', PACK ...Args =(98.21f))
+{
+   cout << x;
+   Fun(Args...);  // Fun(98.21f); --> we call the overloaded funct.
+}
+
