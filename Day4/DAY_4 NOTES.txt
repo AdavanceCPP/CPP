@@ -1,0 +1,686 @@
+FOLD EXPRESSIONS:
+
+template<typename... Args> auto SumVal(Args ...Data)
+{
+	return (Data + ...);
+}
+
+Hypothetical instantiation of the above variadic function for the call statement below:
+
+cout << SumVal(10, 20, 30, 40, 50) << endl;
+
+template<> auto SumVal(int x1, int x2, int x3, int x4, int x5)  // SumVal... HHHHH
+{...}
+
+cout << SumVal(10, 20.32f, 30, 40.67, 50) << endl;
+
+template<> auto SumVal(int x1, float x2, int x3, double x4, int x5)  // SumVal... HMHNH
+{...}
+
+
+************************************************
+STAGE-1
+
+template<typename... Args> auto SumVal(Args ...Data)   //  ...Data  ===> (10, 20, 30, 40, 50) 
+{
+	return (Data + ...);    // return (10 + [20, 30, 40, 50]);
+	//        x1 + ...);    // return (x1 +[x2,x3,x4,x5]);
+}
+
+STAGE-2
+
+template<typename... Args> auto SumVal(Args ...Data)   //  ...Data  ===> (10, 20, 30, 40, 50) 
+{
+	return (Data + ...);    // return (10 + 20 + [30, 40, 50]);
+	//     
+}
+
+stage-N
+
+template<typename... Args> auto SumVal(Args ...Data)   //  ...Data  ===> (10, 20, 30, 40, 50) 
+{
+	return (Data + ...);    // return (10 + 20 + 30 + 40 + [50]);
+}
+----------------------------
+Unary fold:
+
+  Homegenous operation on all the values in the parameter pack.
+
+Prefer Unary fold when the operation on the values held in the parameter pack is same, and the operation with a 2nd element ('z') is different from the operations on the values inside the pack.
+
+USAGE: It is a addition on the elements in the pack
+       It is a multiplication or something else on the second element with total sum values of the pack
+
+auto z=100;
+//Unary fold with addition on pack elements and a product of 'z'
+return z * (pack + ...);  // ---> z * (Args1 + (... + (ArgsN-1 + ArgsN)))
+
+Binary Fold:
+Prefer Binary fold when the operation on the values held in the parameter pack and the 2nd value is also the same.
+
+//binary fold  with addition operation on both the pack elements and 'z'  
+return (z + ... + pack);   //Binary Left fold --> (((z + Args1) + Args2) + ...) + packN
+--------------------------------
+FOLD EXPRESSION INSTANTIATIONS:
+
+template<typename... Args> auto SumVal(Args ...Data)
+{
+	return (Data + ...);
+}
+
+template<int> auto SumVal(int x1, int x2, int x3, int x4, int x5)
+{...}
+
+G++:- _Z6SumValiiiii
+
+Hypothetical instantiation of the above variadic function for the call statement below:
+
+cout << SumVal(10, 20, 30, 40, 50) << endl;   
+*******************************************************
+template<typename... Args> auto SumVal(Args ...Data)
+{
+	return (Data + ...);
+}
+
+template<int> auto SumVal(int x1, int x2)
+{...}
+
+Hypothetical instantiation of the above variadic function for the call statement below:
+
+cout << SumVal(10, 20) << endl;
+-------------------------------------------------
+template<typename... Args> auto SumVal(Args ...Data)
+{
+	return (Data + ...);
+}
+
+template<float> auto SumVal(float x1, float x2, float x3, float x4)
+
+DECORATED NAMES FOR THE ABOVE INSTANTIATION
+MSVC : ??SumVal@@YAMMMMM@Z
+G++  : _Z6SumValffff
+
+SumVal(45.12f, 56.12f, 89.21f, 99.45f);
+--------------------------------------------------------------
+template<typename...Args> auto Compute(Args... pack)
+{
+
+}
+
+template<typename T1, typename T2, typename T3, typename T4> auto Compute(T1 x1, T2 x2, T3 x3, T4 x4)
+{
+
+}
+
+template<int, int, double, float> auto Compute(int x1, int x2, double x3, float x4)
+{
+
+}
+
+auto result= Compute(20,49,12.34,5.12f);
+
+----------------------------------------------
+template<typename... PACK> auto SumVal(PACK... Data)
+{
+    return (Data + ...);      //  return  (10+(20+(30+(40+50))));   
+}
+
+SumVal(10, 20, 30, 40, 50) 
+---------------------------------------------------------------------------
+template<typename... Pack> void Process(Pack... Args)
+{
+    auto lm =[](auto& x){cout << x << endl;};  //C++14 -Generic lambda
+
+    (lm(Args), ...);   //Fold over comma
+}
+
+
+(lm(Args),...);   ===>  (lm(10),lm(20),lm(30),lm("cpp"),lm(50.56f))
+
+Process(10,20,30,"cpp",50.56f);
+
+-------------------------------------------------------------
+template<typename... Args> void VariadicFun1(Args... Data)
+{
+	(cout << ... << std::forward<Args>(Data));
+	cout << endl;
+}
+***********************************************
+                                                   56
+cout << (12, 56, 87.90, 'c') << std::forward<int>(Data));
+
+                                               12
+cout << (56, 87.90, 'c') << std::forward<int>(Data));
+
+                                           56
+cout << (87.90, 'c') << std::forward<int>(Data));
+
+                                      87.90
+cout << ('c') << std::forward<double>(Data));
+
+                                   c
+cout << () << std::forward<char>(Data));
+*********************************************************
+int main()
+{
+	VariadicFun1(56, 12, 56, 87.90, 'c');
+}	
+
+-------------------------------------------------------------------------
+//Generic class
+
+template<typename T> class CA   //primary template
+{
+  //...
+};
+
+//The above generic class can also be specialized...
+template<typename T> class CA<T*>   //partial specialization
+{
+  //..
+};
+
+template<> class CA<char>   //full specialization
+{
+//...
+};    
+---------------------------------
+template<typename T> class CA {  };
+
+//The specialized class for 'char', shall also derive from the primary template class
+template<typename T> class CA<char> : public CA<T>
+{ };
+--------------------------------------------------------------
+template<typename... PACK> class CA
+{
+    //A variadic class template
+};    
+
+(or)
+
+template<typename T, typename... PACK> class CA
+{
+   //A variadic class template
+};    
+------------------------------------------------
+//A variadic generic class that facilitates in realizing multi-level inheritance while instantiation.
+
+template<typename... PARAMETER_PACK> class CA
+{
+public:
+    CA(){cout <<"Base class CA" << endl;}
+};
+
+template<typename PARAMETER_TYPE, typename ... PARAMETER_PACK> 
+                     class CA<PARAMETER_TYPE, PARAMETER_PACK...> : private CA<PARAMETER_PACK...>
+{
+private:
+	PARAMETER_TYPE data;
+public:
+
+	CA(PARAMETER_TYPE h, PARAMETER_PACK... args) :CA<PARAMETER_PACK... >(args...), data(h)
+	{
+		cout << "No. of elements left further ..." << sizeof...(args) << endl;
+		cout << "data " << data << endl;
+	}
+};
+
+//consumer code
+CA<int, float, double> obj1(10,12.34f, 56.12);
+
+The above generic class instantiations by the compiler will be in the following order....
+
+class CA<>
+{
+public:
+  CA(){cout <<"Base class CA" << endl;}
+};
+
+class CA<double>:private CA<>
+{
+private:
+  double data;  //56.12
+public:
+  CA(double h,[]):CA<>(),data(h)
+  {
+    //..
+  }  
+};
+
+class CA<float>:private CA<double>
+{
+private:
+  float data;  //12.34f
+public:
+  CA(float h, [56.12]):CA<double>([56.12]),data(h)
+  {
+    //..
+  }  
+};
+
+class CA<int>:private CA<float,double>
+{
+private:
+  int data;  //10
+public:
+  CA(int h, [12.34f,56.12]):CA<float,double>([12.34f,56.12]),data(h)
+  {
+    //..
+  }  
+};
+
+
+*********************************************************
+CA<int, float, double> obj1(10,12.34f, 56.12);
+
+template<typename PARAMETER_TYPE, typename ... PARAMETER_PACK> 
+           class CA<PARAMETER_TYPE, PARAMETER_PACK...> : private CA<PARAMETER_PACK...>
+           { };
+           
+Hypothetical view of the above generic declaration for the instance 'obj1' can be perceived like this....
+
+template<int, [float,double]> class CA<int, [float,double]>:private CA<float,double>  
+{ }; 
+
+//MULTILEVEL INHERITANCE to unwind the parameter-pack of a variadic class template...
+class CA<double>:private CA<> { };
+class CA<float>:private CA<double>{ };
+class CA<int>:private CA<float> { };
+
+In certain problem situations we can also go for MULTIPLE INHERITANCE to unwind the parameter-pack of a variadic class template.       
+-------------------------------------------------------------
+A variadic class template would be useful when we want to achieve compile-time strategy.
+
+  If the classes that is being consumed for achieving compile-time strategy comes from the same vendor,i.e all member functions across the different classes are same by name and signature, then
+    - Design the variadic class for MULTI-LEVEL inheritance.
+    for eg:
+      template<typename...PARAMETER_PACK> class CA
+      {
+      };
+      template<typename PARAMETER_TYPE, typename... PARAMETER_PACK> 
+          class CA<PARAMETER_TYPE,PARAMETER_PACK...>:private CA<PARAMETER_PACK...>
+          {
+          
+          };
+
+  ------------
+  If the classes that is being consumed for achieving compile-time strategy comes from different vendors, i.e. the member functions across the different classes have different names or signatures..., then
+    - Design the variadic class for MULTIPLE-INHERITANCE.
+    
+    For eg:
+    
+    template<typename... PARAMETER_PACK> class CA:public PARAMETER_PACK...
+    {
+    };
+
+**********************************************************************************
+template<typename...INSTRUMENT_TYPES> class Compose
+{
+public:
+	void play_music() { cout <<"completed...." << endl;}
+};
+
+template<typename INSTRUMENT, typename ... INSTRUMENT_TYPES> 
+           class Compose<INSTRUMENT, INSTRUMENT_TYPES...> : private Compose<INSTRUMENT_TYPES...>
+{
+private:
+	INSTRUMENT object;
+public:
+	void play_music()
+	{
+		object.play();
+		Compose<INSTRUMENT_TYPES...>::play_music();    //Compose<>::play_music();
+	}
+};
+
+Compose<Drums, Piano, Flute, Guitar> music4;
+
+The instantiation of the above variadic class template for the instance 'music4' above is as follows:
+
+class Compose<>
+{
+private:
+  
+public:
+  void play_music() { cout <<"completed...." << endl;}
+};
+
+class Compose<Guitar>:private Compose<>
+{
+private:
+  Guitar object;
+public:
+  void play_music()
+  {
+    object.play();
+    Compose<>::play_music();
+  }  
+};
+
+class Compose<Flute>:private Compose<Guitar>
+{
+private:
+  Flute object;
+public:
+  void play_music()
+  {
+    object.play();
+    Compose<Guitar>::play_music();
+  }  
+};
+
+class Compose<Piano>:private Compose<Flute,Guitar>
+{
+private:
+  Piano object;
+public:
+  void play_music()
+  {
+    object.play();
+    Compose<Flute,Guitar>::play_music();
+  }  
+};
+
+class Compose<Drums>:private Compose<Piano,Flute,Guitar>
+{
+private:
+  Drums object;
+public:
+  void play_music()
+  {
+    object.play();
+    Compose<Piano,Flute,Guitar>::play_music();
+  }  
+};
+*********************************************************************
+A variadic class template for multiple-inheritance.
+
+template<typename... Policy> class Music :public Policy...  //Derive from the parameter pack
+{   };
+
+Music<Flute, Drums,Piano> obj1; [instantiation for this object]
+
+class Music:public Flute, public Drums,public Piano
+{  };
+--------------------------
+Music<Flute> obj2;  [instantiation for this object]
+
+class Music:public Flute
+{  };
+---------------------------------
+Music<Guitar, Drums,Violin> obj3;  [instantiation for this object]
+
+class Music:public Guitar, public Drums,public Violin
+{  };
+------------------------------------------------------
+NON-TYPE parameters with class templates
+
+template<typename T> class CA
+{
+private:
+  T arr[10];   //No matter what the data type of the elements are, the size is always fixed.
+};
+
+CA<int> obj1;   // int arr[10];
+CA<float> obj2; // float array[10];
+
+What if the class consumer wants a provision for also deciding the size of the array.
+The size of the array is signed integer value and a compile-time constant [Size of the array must be resolvable by the compiler during compile-time]
+
+
+template<typename T, int SIZE> class CA
+{
+private:
+  T arr[SIZE];   // 'SIZE' the non-type parameter acts as a COMPILE-TIME  constant.
+};
+//consumer...
+CA<int, 10> obj1;   // int arr[10];
+CA<char,5> obj2;    // char arr[5];
+
+constexpr int SIZE=10;
+int arr[SIZE];
+//...  
+-----------------------------------------------------------------
+Memory management classes in Modern C++:-
+  - These classes employ certain C++ language features along with OO design's.
+  
+    Language features:
+        - Class templates
+        - Function overloading
+        - Operator overloading
+        - Conversion functions
+    Design features:
+        - PIMPL model
+        - RAII model
+        - Smartpointer design.
+----------------------------------------------
+The modern C++ library now supports 3 different types of memory management classes...
+
+1) unique_ptr
+2) shared_ptr
+3) weak_ptr
+
+#include<memory>
+
+Unique_ptr:
+          It is an instance that would help us hold the address of a heap instance.
+          Memory allocation request is explicitly made by the programmer, upon successful allocation this address is provided to the unique_ptr instance.
+          There upon this unique_ptr instance becomes the exclusive owner of that heap. This heap address is not allowed to be shared across different unique_ptr instance.
+          In other-words a unique_ptr instance is a move only type, it cannot be lvalue copy constructed.
+          By applying a move operation on this instance, the ownership gets transferred, at any given point of time the heap resource would be pointed to by only one unique_ptr instance.
+          
+      The de-allocation happens automatically when the unique_ptr instance perishes.
+      [The heap memory life-time is directly equal to the life-time of unique_ptr instance]
+
+template<typename T> class unique_ptr
+{
+private:
+  T* pointee;
+  void(*dl)(T*) = &default_delete<T>;  //in-class initializer feature
+public:
+    unique_ptr():pointee(nullptr){ }
+    unique_ptr(T* x):p(x){ }
+    //...
+    //...
+    auto& get_deleter()
+    {
+      return dl;
+    }
+    
+    T* get()
+    {
+      return pointee;
+    }
+    
+    unique_ptr(const unique_ptr& x)=delete;
+    unique_ptr& operator =(const unique_ptr& x)=delete;
+    
+    //move operations
+    unique_ptr(unique_ptr&& x):pointee(x.pointee)
+    {
+      x.pointee = nullptr;
+    }
+    
+    unique_ptr& operator =(unique_ptr&& x) 
+    {
+      if(pointee != nullptr)
+      {
+         delete pointee;
+      }
+       pointee=x.pointee;
+       x.pointee = nullptr;
+    }
+    
+    //..
+    operator bool(){ }
+    operator->();
+    //...
+    ~unique_ptr()
+    {
+      (*dl)(pointee);
+    }
+};
+
+template<typename T> void default_delete(T *x)
+{
+  if(p != nullptr)
+     delete p;
+}
+--------------------------------------------------------------------------------
+
+  Traditional usage:
+      int* p1 = new(nothrow) int;
+      //..
+      delete p1;
+      
+  Modern usage:
+       unique_ptr<int> p1 = make_unique<int>();   // make_unique() is C++14 function
+               (or)
+       unique_ptr<int> p2 = new int{};  //error, deprecated
+       
+       unique_ptr<int> p2 = unique_ptr<int>(new int{}); 
+       
+      
+----------------------
+When a class exhibits PIMPL model, it also a good practice to introduce a conversion function 'operator bool'.
+All memory management classes have 'operator bool' overloaded as member function.
+
+class Pointee
+{
+private:
+  int* p;
+public:
+    Pointee():p(nullptr){ }
+    Pointee(int* q):p(q){ }
+    ~Pointee()
+    {
+      if(p != nullptr)
+      {
+        delete p;
+      }
+    }
+    void operator(int* q){ p = q; }
+    
+    void print(){ cout <<"data is :" << *p << endl; }
+    
+    operator bool()
+    {
+      if(p != nullptr)
+        return true;
+      else
+        return false;
+    }
+};
+
+//***consumer code***********
+int main()
+{
+   Pointee obj1(new(nothrow) int(100));
+   //if(obj1.p != nullptr)
+   if(obj1)          // if(obj1.operator bool())
+      obj1.print();
+   else
+      //...
+   //...
+   
+   Pointee obj2;
+   //...
+   //...
+   if(obj2)
+      obj2.print();
+   else
+      //....
+return 0;
+}
+----------------------------------------
+From a unique_ptr as source to a raw_pointer as target, we can employ
+  - get() function (or)
+  - release() function of the unique_ptr class.
+
+
+From a raw_pointer as the source and a unique_ptr as the target, we can employ
+    - reset() function of unique_ptr class.
+    
+When we happen to define unique_ptr instances that should point or delegate to a custom delete handler, and the heap memory resource is incidentally being accquired with the help of make_unique function and not the 'new' operator function, then we need to use the member function called 'get_deleter' to provide the address of the custom delete handler function with respect to the unique_ptr instance.  
+---------------------------------------------------------------------------
+Why make_unique call is better than 'new' operator call ?
+
+void fun(int* p1, float* p2, double* p3)
+{
+  //...
+  delete p1;
+  delete p2;
+  delete p3;
+}
+
+int main()
+{
+     fun(new(nothrow) int, new(nothrow) float, new(nothrow) double);  //NOT SAFE, memory leaks
+             [Suc..]                [Suc..]          [Broke...]
+     //...
+}
+
+Alternate, better or modern idea...
+
+void fun(unique_ptr<int> p1, unique_ptr<float> p2, unique_ptr<double> p3)
+{
+  //...
+  
+}
+
+int main()
+{
+     fun(make_unique<int>(), make_unique<float>(), make_unique<double>());  //Very safe, no memory leaks
+             [Suc..]              [Suc..]             [Broke...]
+     //...
+}
+
+A call to make_unique will always yield a nameless 'unique_ptr' type instance
+-----------------------
+CONSTANT EXPRESSION:
+  int Sum(int x)
+{
+    //...
+    return x+100;
+}
+
+
+//consumer code
+//...
+int result = Sum(a);    //int result = call Sum(a)
+
+      @@@@@@@           //Prolog
+      @@@@@@
+         $$$$$$$$$$     //Business logic
+         $$$$$$$$$$
+      !!!!!!!           // Epilog
+      !!!!!!!
+
+int result2 = Sum(10);
+      @@@@@@@           //Prolog
+      @@@@@@
+         $$$$$$$$$$     //Business logic
+         $$$$$$$$$$
+      !!!!!!!           // Epilog
+      !!!!!!!
+
+-----------------------------------------------------------
+constexpr int Sum(int x)
+{
+    //...
+    return x+100;
+}
+
+
+//consumer code
+//...
+int result = Sum(a);    //int result = call Sum(a)
+
+      @@@@@@@           //Prolog
+      @@@@@@
+         $$$$$$$$$$     //Business logic
+         $$$$$$$$$$
+      !!!!!!!           // Epilog
+      !!!!!!!
+
+constepxr int result2 = Sum(10); /// int result2 = 110;
