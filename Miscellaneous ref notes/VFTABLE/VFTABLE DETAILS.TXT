@@ -1,0 +1,130 @@
+If a class comprises of one or more virtual member functions, then such a class would be introduced with an invisible pointer field called "vptr" as the first-data member.
+
+This 'vptr' pointer field will hold the address of the VTABLE.
+
+VTABLE also called virtual member function table is an array of function-pointers, holding the address of such member functions marked as 'virtual' in the class.
+
+The size of the VTABLE depends upon the no. of functions marked as virtual in the class.
+
+This VTABLE layout and its address contents will be finalized by the compiler while compiling the code and would reside on the data-segment area of the process memory.
+
+Per class there shall be one VTABLE and would be shared by all objects of the same class kind.
+
+The base class member functions marked as 'virtual' are also called as OVER-RIDABLE methods.
+
+The derived class member functions with the same and signature as that of the base class virtual member functions, are also called as OVER-RIDING methods.
+
+Classes comprising of OVER-RIDABLE or OVER-RIDING methods are also called as POLYMORPHIC CLASSES.
+
+A base class virtual member function may or may not be over-ridden in the derived, but a pure virtual member function of the base class must and should be over-ridden the derived class.
+
+A class comprising of one or more pure virtual member functions are also called as ABSTRACT class.
+
+We cannot create objects of ABSTRACT class.
+
+If all member functions of the class are pure virtual,then such a class is also called as INTERFACE.
+
+Note: A destructor method in C++ cannot be pure virtual.
+--------------------------------------------------------------------
+CONCRETE CLASS: A class whose instance may be created or creating an instance of this class makes business sense, then such class is also called as CONCRETE CLASS.
+
+Note: Whenever a CONCRETE class act as a base kind, over period of time there are chances that they may undergo some maintenance or modification work, when that happens we need re-compile it, apart from this it will also force the programmer to re-compile or re-build the remaining derived or dependent classes, which phenomenon is also called...
+  - Tight-coupling or transitive dependancy problem:
+    Making changes to this base concrete class, will also un-necessarily force the programmer to re-compile or re-build the remaining derived classes for whom no changes have been made.
+
+
+
+void graphics(circle *);  // circle is a concrete or a implementable type
+                          //PROGRAMMED TO THE IMPLEMENTATION
+
+
+
+void graphics(shape *);  //shape is a abstract type and cannot be 
+                         //implemented, PROGRAMMED TO THE ABSTRACTION
+------------------------------------
+Design a function called COPY, that shall take input from an input-device and re-direct the same to an output-device.
+
+C style approach: [Functions demand regular modification as new requirements keep cropping up]
+
+input-device : KEYBOARD
+output-device: PRINTER
+
+void COPY()
+{
+  char ch;
+  while(ch = keyboard())
+  { 
+    printer(ch);
+  }
+}
+
+Over a period of time, the customer wants a choice with the output-device viz..
+  1) PRINTER (or)
+  2) HDD
+  
+enum OUTPUTDEVICE{PRINTER, HDD};
+
+void COPY(OUTPUTDEVICE device)
+{
+  char ch;
+  while(ch = keyboard())
+  {
+    if(device == HDD)
+          hdd(ch);
+    else
+         printer(ch);
+  }
+}
+-----------------------
+An OO approach, where have the option for programming for the FUTURE or generalization.
+
+class Inputdevice
+{
+public:
+  virtual char input()=0;
+  //...
+};
+
+class Outputdevice
+{
+public:
+  virtual void print(char)=0;
+};
+
+void COPY(Inputdevice &d1, Outputdevice &d2)
+{
+  char ch;
+  while(ch = d1.input())
+     d2.print(ch);
+}
+
+class keyboard:public Inputdevice
+{
+private:
+  //....
+public:
+  char input()
+  {
+     ///....
+     return ...;
+  }
+};
+
+class printer:public Output device
+{
+private:
+//...
+public:
+  void print(char ch)
+  {
+    //....
+  }
+};
+
+int main()
+{
+  keyboard k1;
+  printer p1;
+  COPY(k1,p1);
+}
+-----------------------------------
